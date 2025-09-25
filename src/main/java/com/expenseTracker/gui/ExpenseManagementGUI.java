@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
 import com.expenseTracker.dao.TrackerDAO;
 import com.expenseTracker.model.Category;
 import com.expenseTracker.model.Expense;
@@ -18,6 +19,7 @@ public class ExpenseManagementGUI extends JFrame
     private JTable expenseTable;
     private DefaultTableModel tableModel;
 
+    private JComboBox<String> filterComboBox;
     private JComboBox<String> categoryComboBox;
     private JTextArea notes;
     private JTextField amount;
@@ -33,80 +35,100 @@ public class ExpenseManagementGUI extends JFrame
         loadExpenses();
     }
 
+
     private void initializeComponents() {
         setTitle("Expenses");
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setSize(800, 600); 
         setLocationRelativeTo(mainGUI);
 
+        // ===== Table Setup =====
         String[] columnNames = {"ID", "Category", "Notes", "Amount", "Date"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false;
+                return false; // make table read-only
             }
         };
         expenseTable = new JTable(tableModel);
         expenseTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
-        String [] categories = giveCategories();
+        // ===== Categories =====
+        String[] categories = giveCategories();
+
+        filterComboBox = new JComboBox<>(categories);
+        filterComboBox.insertItemAt("All", 0);
+        filterComboBox.setSelectedIndex(0); // default to "All"
 
         categoryComboBox = new JComboBox<>(categories);
+        categoryComboBox.setPreferredSize(new Dimension(200, 25));
+
+        // ===== Input Fields =====
         notes = new JTextArea(3, 20);
-        amount = new JTextField(20);
+        notes.setLineWrap(true);
+        notes.setWrapStyleWord(true);
+        notes.setPreferredSize(new Dimension(200, 60));
+
+        amount = new JTextField();
+        amount.setPreferredSize(new Dimension(200, 25));
+
+        // ===== Buttons =====
         addButton = new JButton("Add Expense");
-
-
-        // categoryComboBox.addActionListener((e)->{
-        //     filterCategory();
-        // });
+        addButton.setPreferredSize(new Dimension(150, 30)); // balanced, not stretched
     }
+
 
     private void setupLayout() {
         setLayout(new BorderLayout());
 
-        // Input Panel at the TOP
+        // ===== Filter Panel =====
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        filterPanel.add(new JLabel("Filter:"));
+        filterPanel.add(filterComboBox);
+
+        // ===== Input Panel =====
         JPanel inputPanel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.gridx = 0;
-        gbc.gridy = 0;
+        gbc.insets = new Insets(8, 8, 8, 8);
+        gbc.fill = GridBagConstraints.NONE; // keep preferred sizes
         gbc.anchor = GridBagConstraints.WEST;
-        inputPanel.add(new JLabel("Category"), gbc);
 
-        gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        // Category
+        gbc.gridx = 0; gbc.gridy = 0;
+        inputPanel.add(new JLabel("Category:"), gbc);
+
+        gbc.gridx = 1; gbc.gridy = 0;
         inputPanel.add(categoryComboBox, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.fill = GridBagConstraints.NONE;
-        inputPanel.add(new JLabel("Notes"), gbc);
+        // Notes
+        gbc.gridx = 0; gbc.gridy = 1;
+        inputPanel.add(new JLabel("Notes:"), gbc);
 
-        gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridx = 1; gbc.gridy = 1;
         inputPanel.add(new JScrollPane(notes), gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        gbc.fill = GridBagConstraints.NONE;
-        inputPanel.add(new JLabel("Amount"), gbc);
+        // Amount
+        gbc.gridx = 0; gbc.gridy = 2;
+        inputPanel.add(new JLabel("Amount:"), gbc);
 
-        gbc.gridx = 1;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridx = 1; gbc.gridy = 2;
         inputPanel.add(amount, gbc);
 
-        gbc.gridx = 1;
-        gbc.gridy = 3;
-        gbc.fill = GridBagConstraints.NONE;
+        // Add Button just below Amount
+        gbc.gridx = 0; gbc.gridy = 3; 
+        gbc.gridwidth = 2;
+        gbc.anchor = GridBagConstraints.CENTER;
         inputPanel.add(addButton, gbc);
 
-        // Add Input panel at the TOP
-        add(inputPanel, BorderLayout.NORTH);
+        // ===== North Panel (Filter + Input together) =====
+        JPanel northPanel = new JPanel(new BorderLayout());
+        northPanel.add(filterPanel, BorderLayout.NORTH);
+        northPanel.add(inputPanel, BorderLayout.CENTER);
 
-        // Add Table at the BOTTOM (filling space)
-        JScrollPane tableScrollPane = new JScrollPane(expenseTable);
-        add(tableScrollPane, BorderLayout.CENTER);
+        add(northPanel, BorderLayout.NORTH);
+
+        // ===== Table =====
+        add(new JScrollPane(expenseTable), BorderLayout.CENTER);
     }
 
     private void setupEventListeners(){
