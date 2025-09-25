@@ -36,8 +36,8 @@ public class MainGUI extends JFrame {
         categoryButton.addActionListener(e -> {
             new CategoryManagementGUI(this, trackerDAO).setVisible(true);
         });
-        // expenseButton.addActionListener(e->{
-        //     new ExpenseManagementGUI(this,trackerDAO).setVisible(true);
-        // });
+        expenseButton.addActionListener(e->{
+            new ExpenseManagementGUI(this,trackerDAO).setVisible(true);
+        });
     }
 }
