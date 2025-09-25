@@ -1,6 +1,8 @@
-D:\lakshanaProjects\ExpenseTracker\ExpenseTracker\src\main\java\com\expenseTracker\gui\CategoryGU.java
+D:\lakshanaProjects\ExpenseTracker\ExpenseTracker\src\main\java\com\expenseTracker\dao\TrackerDAO.java
 D:\lakshanaProjects\ExpenseTracker\ExpenseTracker\src\main\java\com\expenseTracker\model\Category.java
+D:\lakshanaProjects\ExpenseTracker\ExpenseTracker\src\main\java\com\expenseTracker\gui\CategoryManagementGUI.java
 D:\lakshanaProjects\ExpenseTracker\ExpenseTracker\src\main\java\com\expenseTracker\model\Expense.java
 D:\lakshanaProjects\ExpenseTracker\ExpenseTracker\src\main\java\com\expenseTracker\utilities\DatabaseConnection.java
 D:\lakshanaProjects\ExpenseTracker\ExpenseTracker\src\main\java\com\expenseTracker\gui\MainGUI.java
+D:\lakshanaProjects\ExpenseTracker\ExpenseTracker\src\main\java\com\expenseTracker\gui\ExpenseManagementGUI.java
 D:\lakshanaProjects\ExpenseTracker\ExpenseTracker\src\main\java\com\expenseTracker\Main.java
