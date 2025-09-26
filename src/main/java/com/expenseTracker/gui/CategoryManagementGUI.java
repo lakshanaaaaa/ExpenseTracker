@@ -16,6 +16,8 @@ public class CategoryManagementGUI extends JFrame
     private DefaultTableModel tableModel;
     private JTextField categoryField;
     private JButton addButton;
+    private JButton deleteButton;
+    private JButton updateButton;
 
     public CategoryManagementGUI(MainGUI mainGUI, TrackerDAO trackerDAO) {
         this.mainGUI = mainGUI;
@@ -45,6 +47,8 @@ public class CategoryManagementGUI extends JFrame
 
         categoryField = new JTextField(20);
         addButton = new JButton("Add Category");
+        deleteButton =new JButton("Delete Category");
+        updateButton =new JButton("Update Category");   
     }
 
     private void setupLayout() {
@@ -62,6 +66,8 @@ public class CategoryManagementGUI extends JFrame
 
         JPanel buttonPanel = new JPanel(new FlowLayout());
         buttonPanel.add(addButton);
+        buttonPanel.add(updateButton);
+        buttonPanel.add(deleteButton);
 
         JPanel northPanel = new JPanel(new BorderLayout());
         northPanel.add(inputPanel, BorderLayout.CENTER);
@@ -77,8 +83,35 @@ public class CategoryManagementGUI extends JFrame
 
     private void setupEventListeners() {
         addButton.addActionListener(e -> addCategory());
+        deleteButton.addActionListener(e ->deleteCategory());
+        updateButton.addActionListener(e ->updateCategory());
     }
 
+    private void deleteCategory(){
+        int row=categoryTable.getSelectedRow();
+        if(row==-1){
+            JOptionPane.showMessageDialog(this,"Please select a row to delete","Selection Error",JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        int confirm=JOptionPane.showConfirmDialog(this,"Are you sure you want to delete this category?","Confirm Delete",JOptionPane.YES_NO_OPTION);
+        if(confirm==JOptionPane.YES_OPTION){
+            int id=(int) tableModel.getValueAt(row,0);
+            try{
+                boolean deleted=trackerDAO.deleteCategory(id);
+                if(!deleted){
+                    JOptionPane.showMessageDialog(this,"Cannot delete category as it is associated with existing expenses.","Deletion Error",JOptionPane.ERROR_MESSAGE);
+                }
+                else{
+                    JOptionPane.showMessageDialog(this,"Category deleted successfully","Success",JOptionPane.INFORMATION_MESSAGE);
+                }
+                categoryField.setText("");
+                loadCategories();
+            }
+            catch(SQLException e){
+                JOptionPane.showMessageDialog(this,"Error deleting category: "+e.getMessage(),"Database Error",JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
     private void addCategory() {
         String catName = categoryField.getText().trim();
         if (catName.isEmpty()) {
@@ -95,6 +128,55 @@ public class CategoryManagementGUI extends JFrame
             JOptionPane.showMessageDialog(this, "Error adding category: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
         }
     }
+
+    // private void selectedDisplay(){
+    //     int row=categorytable.getSelectedRow();
+    //     if(selected==-1){
+    //         JOptionPane.showMessageDialog(this,"Please select a row to update","Selection Error",JOptionPane.ERROR_MESSAGE);
+    //         return;
+    //     }
+    //     int catId=(int) tableModel.getValueAt(row,0);
+    //     categoryField.setText((String) tableModel.getValueAt(row,1));
+    // }
+
+    private void updateCategory(){
+        int row=categoryTable.getSelectedRow();
+        if(row==-1){
+            JOptionPane.showMessageDialog(this,"Please select a row to update","Selection Error",JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        String catName=categoryField.getText().trim();
+        if(catName.isEmpty()){
+            JOptionPane.showMessageDialog(this,"Category name cannot be empty","Input Error",JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        int catId=Integer.parseInt(tableModel.getValueAt(row,0).toString());
+
+        try{
+            Category cat=trackerDAO.getCategoryById(catId);
+
+            if(cat==null){
+                JOptionPane.showMessageDialog(this,"Selected category does not exist","Input Error",JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if(cat!=null){
+                cat.setCatName(catName);
+            }
+            if(trackerDAO.updateCategory(cat)){
+                JOptionPane.showMessageDialog(this,"Category updated successfully","Success",JOptionPane.INFORMATION_MESSAGE);
+                categoryField.setText("");
+                loadCategories();
+            }else{
+                JOptionPane.showMessageDialog(this,"Failed to update category","Error",JOptionPane.ERROR_MESSAGE);
+            }
+        }
+        catch(SQLException e){
+            JOptionPane.showMessageDialog(this,"Error updating category: "+e.getMessage(),"Database Error",JOptionPane.ERROR_MESSAGE);
+        }
+
+
+    }
+
 
     private void loadCategories() {
         try {

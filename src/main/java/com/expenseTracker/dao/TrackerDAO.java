@@ -6,7 +6,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 // import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.sql.Statement;
 import java.util.List;
 import com.expenseTracker.model.Category;
 import com.expenseTracker.utilities.DatabaseConnection;
@@ -14,22 +13,36 @@ import com.expenseTracker.utilities.DatabaseConnection;
 import com.expenseTracker.model.Expense;
 import java.time.LocalDateTime;
 
+import javax.swing.JOptionPane;
+
 
 
 public class TrackerDAO {
     private static final String ADD_CATEGORY= "INSERT INTO category (catName) VALUES (?)";
     private static final String GET_ALL_CATEGORIES= "SELECT * FROM category ORDER BY catId";
-    private static final String ADD_EXPENSE= "INSERT INTO expense (catId, amount, notes, expense_date) VALUES (?, ?, ?, ?)";
-    private static final String GET_ALL_EXPENSES= "SELECT * FROM expense ORDER BY expenseId";
     private static final String GET_CATEGORY_BY_ID= "SELECT * FROM category WHERE catId = ?";
     private static final String GET_CATEGORY_BY_NAME= "SELECT * FROM category WHERE catName = ?";
+    private static final String DELETE_CATEGORY="DELETE FROM category WHERE catId=?";
+    private static final String UPDATE_CATEGORY="UPDATE category SET catName=? WHERE catId=?";
+
+
+    private static final String ADD_EXPENSE= "INSERT INTO expense (catId, amount, notes, expense_date) VALUES (?, ?, ?, ?)";
+    private static final String GET_ALL_EXPENSES= "SELECT * FROM expense ORDER BY expenseId";
+    
+
 
 
     public void addCategory(Category category) throws SQLException{
         try(Connection conn=DatabaseConnection.getDBConnection();
             PreparedStatement pstmt=conn.prepareStatement(ADD_CATEGORY)){
                 pstmt.setString(1, category.getCatName());
-                pstmt.executeUpdate();
+                int update=pstmt.executeUpdate();
+                if(update>0){
+                    JOptionPane.showMessageDialog(null,"Category added successfully","Success",JOptionPane.INFORMATION_MESSAGE);
+                }
+                else{
+                    JOptionPane.showMessageDialog(null,"Failed to add category","Error",JOptionPane.ERROR_MESSAGE);
+                }
         }
     }
 
@@ -37,8 +50,9 @@ public class TrackerDAO {
     public List<Category> getAllCategories() throws SQLException{
         List<Category> categories=new ArrayList<>();
         try(Connection conn=DatabaseConnection.getDBConnection();
-            Statement stmt=conn.createStatement();
-            ResultSet rs=stmt.executeQuery(GET_ALL_CATEGORIES)){
+            PreparedStatement stmt=conn.prepareStatement(GET_ALL_CATEGORIES);
+            ResultSet rs=stmt.executeQuery())
+            {
                 while(rs.next()){
                     int catId=rs.getInt("catId");
                     String catName=rs.getString("catName");
@@ -51,6 +65,38 @@ public class TrackerDAO {
     public void loadCategories() throws SQLException {
         getAllCategories();
     }
+
+    public boolean deleteCategory(int catId) throws SQLException{
+        try(Connection conn=DatabaseConnection.getDBConnection();
+        PreparedStatement stmt=conn.prepareStatement(DELETE_CATEGORY);){
+            stmt.setInt(1,catId);
+            int row=stmt.executeUpdate();
+            return row>0;
+        }
+    }
+
+    public boolean updateCategory(Category category) throws SQLException{
+        try(Connection conn=DatabaseConnection.getDBConnection();
+        PreparedStatement stmt=conn.prepareStatement(UPDATE_CATEGORY);){
+            stmt.setString(1,category.getCatName());
+            stmt.setInt(2,category.getCatId());
+            int row=stmt.executeUpdate();
+            if(row>0){
+                return true;
+            }
+            else{
+                JOptionPane.showMessageDialog(null,"Failed to update category","Error",JOptionPane.ERROR_MESSAGE);
+                return false;
+            }
+        }
+    }
+
+
+
+
+
+
+
 
 
 
@@ -70,7 +116,7 @@ public class TrackerDAO {
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
                     String catName = rs.getString("catName");
-                    return new Category(catId, catName);
+                    return new Category(catId,catName);
                 }
             }
         }
@@ -80,8 +126,8 @@ public class TrackerDAO {
     public List<Expense> getAllExpenses() throws SQLException {
         List<Expense> expenses = new ArrayList<>();
         try (Connection conn = DatabaseConnection.getDBConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(GET_ALL_EXPENSES)) {
+             PreparedStatement stmt = conn.prepareStatement(GET_ALL_EXPENSES);
+             ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 int expId = rs.getInt("expenseId");
                 int catId = rs.getInt("catID");
@@ -119,6 +165,7 @@ public class TrackerDAO {
             pstmt.executeUpdate();
         }
     }
+
     
 } 
 
