@@ -154,7 +154,7 @@ public class TrackerDAO {
         return null; // or throw an exception if preferred
     }
 
-    public void addExpense(Expense expense) throws SQLException {
+    public boolean addExpense(Expense expense) throws SQLException {
         try (Connection conn = DatabaseConnection.getDBConnection();
         PreparedStatement pstmt = conn.prepareStatement(ADD_EXPENSE)) {   
 
@@ -162,8 +162,53 @@ public class TrackerDAO {
             pstmt.setDouble(2, expense.getAmount());
             pstmt.setString(3, expense.getNotes());  
             pstmt.setTimestamp(4, java.sql.Timestamp.valueOf(expense.getDate()));
-            pstmt.executeUpdate();
+            int row=pstmt.executeUpdate();
+            return row>0;
         }
+    }
+
+    public boolean deleteExpense(int expId) throws SQLException {
+        String DELETE_EXPENSE = "DELETE FROM expense WHERE expenseId = ?";
+        try (Connection conn = DatabaseConnection.getDBConnection();
+             PreparedStatement pstmt = conn.prepareStatement(DELETE_EXPENSE)) {
+            pstmt.setInt(1, expId);
+            int row=pstmt.executeUpdate();
+            return row>0;
+        }
+    }
+
+    public boolean updateExpense(Expense expense) throws SQLException {
+        String UPDATE_EXPENSE = "UPDATE expense SET catId = ?, amount = ?, notes = ?, expense_date = ? WHERE expenseId = ?";
+        try (Connection conn = DatabaseConnection.getDBConnection();
+             PreparedStatement pstmt = conn.prepareStatement(UPDATE_EXPENSE)) {
+            pstmt.setInt(1, expense.getCatId());
+            pstmt.setDouble(2, expense.getAmount());
+            pstmt.setString(3, expense.getNotes());
+            pstmt.setTimestamp(4, java.sql.Timestamp.valueOf(expense.getDate()));
+            pstmt.setInt(5, expense.getExpId());
+            int row=pstmt.executeUpdate();
+            return row>0;
+        }
+    }
+
+    public List<Expense> getSelectedExpenses(String catName) throws SQLException {
+        List<Expense> expenses = new ArrayList<>();
+        int catId= getCategoryByName(catName).getCatId();
+        String GET_EXPENSES_BY_CATEGORY = "SELECT * FROM expense WHERE catId = ? ORDER BY expenseId";
+        try (Connection conn = DatabaseConnection.getDBConnection();
+             PreparedStatement pstmt = conn.prepareStatement(GET_EXPENSES_BY_CATEGORY)) {
+            pstmt.setInt(1, catId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    int expId = rs.getInt("expenseId");
+                    String notes = rs.getString("notes");
+                    double amount = rs.getDouble("amount");
+                    LocalDateTime date = rs.getTimestamp("expense_date").toLocalDateTime();
+                    expenses.add(new Expense(expId, catId, notes, amount, date));
+                }
+            }
+        }
+        return expenses;
     }
 
     

@@ -85,6 +85,14 @@ public class CategoryManagementGUI extends JFrame
         addButton.addActionListener(e -> addCategory());
         deleteButton.addActionListener(e ->deleteCategory());
         updateButton.addActionListener(e ->updateCategory());
+
+        categoryTable.getSelectionModel().addListSelectionListener(e -> {
+            int row = categoryTable.getSelectedRow();
+            if (row != -1) {
+                populateFieldsFromRow(row);
+            }
+        });
+
     }
 
     private void deleteCategory(){
@@ -189,5 +197,14 @@ public class CategoryManagementGUI extends JFrame
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error loading categories: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private void populateFieldsFromRow(int row) {
+        if (row < 0 || row >= tableModel.getRowCount()) {
+            return; // Invalid row, do nothing
+        }
+        String catN = (String) tableModel.getValueAt(row, 2);
+
+        categoryField.setText(catN);
     }
 }

@@ -25,6 +25,9 @@ public class ExpenseManagementGUI extends JFrame
     private JTextField amount;
 
     private JButton addButton;
+    private JButton deleteButton;
+    private JButton updateButton;
+
 
     public ExpenseManagementGUI(MainGUI mainGUI, TrackerDAO trackerDAO) {
         this.mainGUI = mainGUI;
@@ -74,7 +77,8 @@ public class ExpenseManagementGUI extends JFrame
 
         // ===== Buttons =====
         addButton = new JButton("Add Expense");
-        addButton.setPreferredSize(new Dimension(150, 30)); // balanced, not stretched
+        deleteButton =new JButton("Delete Expense");
+        updateButton =new JButton("Update Expense");
     }
 
 
@@ -88,6 +92,7 @@ public class ExpenseManagementGUI extends JFrame
 
         // ===== Input Panel =====
         JPanel inputPanel = new JPanel(new GridBagLayout());
+        JPanel buttonPanel = new JPanel(new FlowLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(8, 8, 8, 8);
         gbc.fill = GridBagConstraints.NONE; // keep preferred sizes
@@ -118,12 +123,14 @@ public class ExpenseManagementGUI extends JFrame
         gbc.gridx = 0; gbc.gridy = 3; 
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
-        inputPanel.add(addButton, gbc);
+        buttonPanel.add(addButton, gbc);
+        buttonPanel.add(updateButton);
+        buttonPanel.add(deleteButton);
 
-        // ===== North Panel (Filter + Input together) =====
         JPanel northPanel = new JPanel(new BorderLayout());
-        northPanel.add(filterPanel, BorderLayout.NORTH);
         northPanel.add(inputPanel, BorderLayout.CENTER);
+        northPanel.add(buttonPanel, BorderLayout.SOUTH);
+        northPanel.add(filterPanel, BorderLayout.NORTH);
 
         add(northPanel, BorderLayout.NORTH);
 
@@ -133,6 +140,16 @@ public class ExpenseManagementGUI extends JFrame
 
     private void setupEventListeners(){
         addButton.addActionListener(e->addExpense());
+        deleteButton.addActionListener(e->deleteButton());
+        updateButton.addActionListener(e->updateExpense());
+        filterComboBox.addActionListener(e->filterExpense());
+
+        expenseTable.getSelectionModel().addListSelectionListener(e -> {
+        int row = expenseTable.getSelectedRow();
+        if (row != -1) {
+            populateFieldsFromRow(row);
+        }
+    });
     }
 
     private void addExpense() {
@@ -174,6 +191,119 @@ public class ExpenseManagementGUI extends JFrame
         }
     }
 
+
+    private void deleteButton() {
+        int row = expenseTable.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a row to delete", "Selection Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        int confirm = JOptionPane.showConfirmDialog(this, "Are you sure you want to delete this expense?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            int id = (int) tableModel.getValueAt(row, 0);
+            try {
+                boolean deleted = trackerDAO.deleteExpense(id);
+                if (deleted) {
+                    JOptionPane.showMessageDialog(this, "Expense deleted successfully", "Success", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Failed to delete expense", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+                loadExpenses();
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(this, "Error deleting expense: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+    // // Call this method whenever you want to populate fields for a specific row
+    private void populateFieldsFromRow(int row) {
+        if (row < 0 || row >= tableModel.getRowCount()) {
+            return; // Invalid row, do nothing
+        }
+
+        // Assuming table columns: ID, Category, Notes, Amount, Date
+        String category = (String) tableModel.getValueAt(row, 1);
+        String notesText = (String) tableModel.getValueAt(row, 2);
+        String amountText = String.valueOf(tableModel.getValueAt(row, 3));
+
+        categoryComboBox.setSelectedItem(category);
+        notes.setText(notesText);
+        amount.setText(amountText);
+    }
+
+
+    private void updateExpense() {
+        int row = expenseTable.getSelectedRow();
+        if (row == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a row to update", "Selection Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        String selectedCategory = (String) categoryComboBox.getSelectedItem();
+        String notesText = notes.getText().trim();
+        String amountText = amount.getText().trim();
+
+        if (selectedCategory == null || selectedCategory.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please select a category", "Input Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        if (amountText.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Amount cannot be empty", "Input Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        double amountValue;
+        try {
+            amountValue = Double.parseDouble(amountText);
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Invalid amount format", "Input Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        try {
+            int expId = (int) tableModel.getValueAt(row, 0);
+            Category category = trackerDAO.getCategoryByName(selectedCategory);
+            if (category == null) {
+                JOptionPane.showMessageDialog(this, "Selected category does not exist", "Input Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            Expense updatedExpense = new Expense(expId, category.getCatId(), notesText, amountValue, LocalDateTime.now());
+            boolean success = trackerDAO.updateExpense(updatedExpense);
+            if (success) {
+                JOptionPane.showMessageDialog(this, "Expense updated successfully", "Success", JOptionPane.INFORMATION_MESSAGE);
+                notes.setText("");
+                amount.setText("");
+                loadExpenses();
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to update expense", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error updating expense: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+
+    private void filterExpense(){
+        String selectedCategory =(String) filterComboBox.getSelectedItem();
+        if(selectedCategory.equals("All")){
+            loadExpenses();
+            return;
+        }
+        try{
+            List<Expense> getSelectedExpenses= trackerDAO.getSelectedExpenses(selectedCategory);
+            tableModel.setRowCount(0);
+            for(Expense exp:getSelectedExpenses){
+                Category cat=trackerDAO.getCategoryById(exp.getCatId());
+                String catName=(cat!=null)?cat.getCatName():"Unknown";
+                Object[] row={exp.getExpId(),catName,exp.getNotes(),exp.getAmount(),exp.getDate().toString()};
+                tableModel.addRow(row);
+            }
+            updateTable();
+        }catch(SQLException e){
+            JOptionPane.showMessageDialog(this, "Error filtering expenses: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE); 
+
+        }
+    }
+
+    private void updateTable(){
+        tableModel.fireTableDataChanged();
+    }
     private void loadExpenses() {
         try {
             List<Expense> expenses = trackerDAO.getAllExpenses();
