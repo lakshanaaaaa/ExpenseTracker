@@ -8,7 +8,7 @@ import java.util.List;
 import com.expenseTracker.dao.TrackerDAO;
 import com.expenseTracker.model.Category;
 
-public class CategoryManagementGUI extends JFrame 
+public class CategoryManagementGUI extends JPanel
 {
     private MainGUI mainGUI;
     private TrackerDAO trackerDAO;
@@ -18,6 +18,7 @@ public class CategoryManagementGUI extends JFrame
     private JButton addButton;
     private JButton deleteButton;
     private JButton updateButton;
+    private JButton backButton;
 
     public CategoryManagementGUI(MainGUI mainGUI, TrackerDAO trackerDAO) {
         this.mainGUI = mainGUI;
@@ -29,10 +30,16 @@ public class CategoryManagementGUI extends JFrame
     }
 
     private void initializeComponents() {
-        setTitle("Categories");
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setSize(800, 600); 
-        setLocationRelativeTo(mainGUI);
+        // setTitle("Categories");
+        // setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        // setSize(800, 600); 
+        // setLocationRelativeTo(mainGUI);
+
+        this.add(new JLabel("Category Management"));
+        backButton = new JButton("Back");
+
+        this.add(backButton);
+
 
         String[] columnNames = {"ID", "Category"};
         tableModel = new DefaultTableModel(columnNames, 0) {
@@ -69,9 +76,14 @@ public class CategoryManagementGUI extends JFrame
         buttonPanel.add(updateButton);
         buttonPanel.add(deleteButton);
 
+        JPanel topPanel= new JPanel(new BorderLayout());
+        topPanel.add(backButton, BorderLayout.WEST);
+        topPanel.add(new JLabel("Category Management", SwingConstants.CENTER),BorderLayout.CENTER);
+
         JPanel northPanel = new JPanel(new BorderLayout());
         northPanel.add(inputPanel, BorderLayout.CENTER);
         northPanel.add(buttonPanel, BorderLayout.SOUTH);
+        northPanel.add(topPanel,BorderLayout.NORTH);
 
         add(northPanel, BorderLayout.NORTH);
         add(new JScrollPane(categoryTable), BorderLayout.CENTER);
@@ -85,6 +97,7 @@ public class CategoryManagementGUI extends JFrame
         addButton.addActionListener(e -> addCategory());
         deleteButton.addActionListener(e ->deleteCategory());
         updateButton.addActionListener(e ->updateCategory());
+        backButton.addActionListener(e -> mainGUI.showHome());
 
         categoryTable.getSelectionModel().addListSelectionListener(e -> {
             int row = categoryTable.getSelectedRow();

@@ -12,7 +12,7 @@ import com.expenseTracker.dao.TrackerDAO;
 import com.expenseTracker.model.Category;
 import com.expenseTracker.model.Expense;
 
-public class ExpenseManagementGUI extends JFrame 
+public class ExpenseManagementGUI extends JPanel 
 {
     private MainGUI mainGUI;
     private TrackerDAO trackerDAO;
@@ -27,6 +27,7 @@ public class ExpenseManagementGUI extends JFrame
     private JButton addButton;
     private JButton deleteButton;
     private JButton updateButton;
+    private JButton backButton;
 
 
     public ExpenseManagementGUI(MainGUI mainGUI, TrackerDAO trackerDAO) {
@@ -40,10 +41,14 @@ public class ExpenseManagementGUI extends JFrame
 
 
     private void initializeComponents() {
-        setTitle("Expenses");
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setSize(800, 600); 
-        setLocationRelativeTo(mainGUI);
+        // setTitle("Expenses");
+        // setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        // setSize(800, 600); 
+        // setLocationRelativeTo(mainGUI);
+
+        this.add(new JLabel("Expense Management"));
+        backButton = new JButton("Back");
+        this.add(backButton);
 
         // ===== Table Setup =====
         String[] columnNames = {"ID", "Category", "Notes", "Amount", "Date"};
@@ -127,10 +132,15 @@ public class ExpenseManagementGUI extends JFrame
         buttonPanel.add(updateButton);
         buttonPanel.add(deleteButton);
 
+        JPanel topPanel = new JPanel(new BorderLayout());
+        topPanel.add(backButton, BorderLayout.WEST);
+        topPanel.add(new JLabel("Expense Management", SwingConstants.CENTER), BorderLayout.CENTER);
+
         JPanel northPanel = new JPanel(new BorderLayout());
         northPanel.add(inputPanel, BorderLayout.CENTER);
         northPanel.add(buttonPanel, BorderLayout.SOUTH);
         northPanel.add(filterPanel, BorderLayout.NORTH);
+        northPanel.add(topPanel, BorderLayout.NORTH);
 
         add(northPanel, BorderLayout.NORTH);
 
@@ -143,6 +153,7 @@ public class ExpenseManagementGUI extends JFrame
         deleteButton.addActionListener(e->deleteButton());
         updateButton.addActionListener(e->updateExpense());
         filterComboBox.addActionListener(e->filterExpense());
+        backButton.addActionListener(e -> mainGUI.showHome());
 
         expenseTable.getSelectionModel().addListSelectionListener(e -> {
         int row = expenseTable.getSelectedRow();
