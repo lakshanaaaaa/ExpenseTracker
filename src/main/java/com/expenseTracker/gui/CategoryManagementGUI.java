@@ -36,7 +36,7 @@ public class CategoryManagementGUI extends JPanel
         // setLocationRelativeTo(mainGUI);
 
         this.add(new JLabel("Category Management"));
-        backButton = new JButton("Back");
+        backButton = new JButton("<-");
 
         this.add(backButton);
 

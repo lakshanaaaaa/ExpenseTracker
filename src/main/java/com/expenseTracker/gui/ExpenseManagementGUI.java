@@ -29,6 +29,8 @@ public class ExpenseManagementGUI extends JPanel
     private JButton updateButton;
     private JButton backButton;
 
+    private JLabel totalExpense;
+
 
     public ExpenseManagementGUI(MainGUI mainGUI, TrackerDAO trackerDAO) {
         this.mainGUI = mainGUI;
@@ -46,8 +48,11 @@ public class ExpenseManagementGUI extends JPanel
         // setSize(800, 600); 
         // setLocationRelativeTo(mainGUI);
 
+        totalExpense = new JLabel("Total Expense: 0.00");
+        totalExpense.setHorizontalAlignment(SwingConstants.RIGHT);
+
         this.add(new JLabel("Expense Management"));
-        backButton = new JButton("Back");
+        backButton = new JButton("<-");
         this.add(backButton);
 
         // ===== Table Setup =====
@@ -87,66 +92,57 @@ public class ExpenseManagementGUI extends JPanel
     }
 
 
-    private void setupLayout() {
-        setLayout(new BorderLayout());
+private void setupLayout() {
+    setLayout(new BorderLayout());
+    add(totalExpense, BorderLayout.SOUTH);
 
-        // ===== Filter Panel =====
-        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        filterPanel.add(new JLabel("Filter:"));
-        filterPanel.add(filterComboBox);
+    // Top: Back button + Title + Filter
+    JPanel topPanel = new JPanel(new BorderLayout());
+    JButton backBtn = backButton;
+    topPanel.add(backBtn, BorderLayout.WEST);
+    topPanel.add(new JLabel("Expense Management", SwingConstants.CENTER), BorderLayout.CENTER);
 
-        // ===== Input Panel =====
-        JPanel inputPanel = new JPanel(new GridBagLayout());
-        JPanel buttonPanel = new JPanel(new FlowLayout());
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(8, 8, 8, 8);
-        gbc.fill = GridBagConstraints.NONE; // keep preferred sizes
-        gbc.anchor = GridBagConstraints.WEST;
+    JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+    filterPanel.add(new JLabel("Filter:"));
+    filterPanel.add(filterComboBox);
 
-        // Category
-        gbc.gridx = 0; gbc.gridy = 0;
-        inputPanel.add(new JLabel("Category:"), gbc);
+    JPanel topContainer = new JPanel(new BorderLayout());
+    topContainer.add(topPanel, BorderLayout.NORTH);
+    topContainer.add(filterPanel, BorderLayout.SOUTH);
 
-        gbc.gridx = 1; gbc.gridy = 0;
-        inputPanel.add(categoryComboBox, gbc);
+    // Input fields panel
+    JPanel inputPanel = new JPanel(new GridBagLayout());
+    GridBagConstraints gbc = new GridBagConstraints();
+    gbc.insets = new Insets(8, 8, 8, 8);
+    gbc.fill = GridBagConstraints.NONE;
+    gbc.anchor = GridBagConstraints.WEST;
 
-        // Notes
-        gbc.gridx = 0; gbc.gridy = 1;
-        inputPanel.add(new JLabel("Notes:"), gbc);
+    gbc.gridx = 0; gbc.gridy = 0; inputPanel.add(new JLabel("Category:"), gbc);
+    gbc.gridx = 1; gbc.gridy = 0; inputPanel.add(categoryComboBox, gbc);
 
-        gbc.gridx = 1; gbc.gridy = 1;
-        inputPanel.add(new JScrollPane(notes), gbc);
+    gbc.gridx = 0; gbc.gridy = 1; inputPanel.add(new JLabel("Notes:"), gbc);
+    gbc.gridx = 1; gbc.gridy = 1; inputPanel.add(new JScrollPane(notes), gbc);
 
-        // Amount
-        gbc.gridx = 0; gbc.gridy = 2;
-        inputPanel.add(new JLabel("Amount:"), gbc);
+    gbc.gridx = 0; gbc.gridy = 2; inputPanel.add(new JLabel("Amount:"), gbc);
+    gbc.gridx = 1; gbc.gridy = 2; inputPanel.add(amount, gbc);
 
-        gbc.gridx = 1; gbc.gridy = 2;
-        inputPanel.add(amount, gbc);
+    // Buttons panel
+    JPanel buttonPanel = new JPanel(new FlowLayout());
+    buttonPanel.add(addButton);
+    buttonPanel.add(updateButton);
+    buttonPanel.add(deleteButton);
 
-        // Add Button just below Amount
-        gbc.gridx = 0; gbc.gridy = 3; 
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
-        buttonPanel.add(addButton, gbc);
-        buttonPanel.add(updateButton);
-        buttonPanel.add(deleteButton);
+    JPanel northPanel = new JPanel(new BorderLayout());
+    northPanel.add(topContainer, BorderLayout.NORTH);
+    northPanel.add(inputPanel, BorderLayout.CENTER);
+    northPanel.add(buttonPanel, BorderLayout.SOUTH);
 
-        JPanel topPanel = new JPanel(new BorderLayout());
-        topPanel.add(backButton, BorderLayout.WEST);
-        topPanel.add(new JLabel("Expense Management", SwingConstants.CENTER), BorderLayout.CENTER);
+    add(northPanel, BorderLayout.NORTH);
 
-        JPanel northPanel = new JPanel(new BorderLayout());
-        northPanel.add(inputPanel, BorderLayout.CENTER);
-        northPanel.add(buttonPanel, BorderLayout.SOUTH);
-        northPanel.add(filterPanel, BorderLayout.NORTH);
-        northPanel.add(topPanel, BorderLayout.NORTH);
+    // Table
+    add(new JScrollPane(expenseTable), BorderLayout.CENTER);
+}
 
-        add(northPanel, BorderLayout.NORTH);
-
-        // ===== Table =====
-        add(new JScrollPane(expenseTable), BorderLayout.CENTER);
-    }
 
     private void setupEventListeners(){
         addButton.addActionListener(e->addExpense());
@@ -306,6 +302,7 @@ public class ExpenseManagementGUI extends JPanel
                 tableModel.addRow(row);
             }
             updateTable();
+            updateTotalExpense();
         }catch(SQLException e){
             JOptionPane.showMessageDialog(this, "Error filtering expenses: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE); 
 
@@ -315,6 +312,7 @@ public class ExpenseManagementGUI extends JPanel
     private void updateTable(){
         tableModel.fireTableDataChanged();
     }
+
     private void loadExpenses() {
         try {
             List<Expense> expenses = trackerDAO.getAllExpenses();
@@ -325,6 +323,7 @@ public class ExpenseManagementGUI extends JPanel
                 Object[] row = {exp.getExpId(), catName, exp.getNotes(), exp.getAmount(), exp.getDate().toString()};
                 tableModel.addRow(row);
             }
+            updateTotalExpense();
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error loading expenses: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
         }
@@ -342,6 +341,14 @@ public class ExpenseManagementGUI extends JPanel
             JOptionPane.showMessageDialog(this, "Error loading categories: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
             return new String[0];
         }
+    }
+
+    private void updateTotalExpense() {
+        double total = 0.0;
+        for (int i = 0; i < tableModel.getRowCount(); i++) {
+            total += (double) tableModel.getValueAt(i, 3); // Assuming Amount is in column index 3
+        }
+        totalExpense.setText(String.format("Total Expense: $%.2f", total));
     }
 
 }
